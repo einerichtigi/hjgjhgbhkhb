@@ -1,0 +1,83 @@
+plugins {
+    id 'org.springframework.boot' version '3.1.0'
+    id 'io.spring.dependency-management' version '1.0.15.RELEASE'
+    id 'java'
+}
+
+group = 'com.example'
+version = '1.0.0'
+sourceCompatibility = '17'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'com.twilio.sdk:twilio:8.25.0'
+    
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+package com.example.callApp;
+
+import com.twilio.Twilio;
+import com.twilio.rest.api.v2010.account.Call;
+import com.twilio.type.PhoneNumber;
+import org.springframework.stereotype.Service;
+
+@Service
+public class TwilioService {
+
+    private final String ACCOUNT_SID = "YOUR_TWILIO_ACCOUNT_SID";
+    private final String AUTH_TOKEN = "YOUR_TWILIO_AUTH_TOKEN";
+    private final String TWILIO_PHONE_NUMBER = "YOUR_TWILIO_PHONE_NUMBER";
+
+    public TwilioService() {
+        Twilio.init(ACCOUNT_SID, AUTH_TOKEN);
+    }
+
+    public void makeCall(String toPhoneNumber, String messageUrl) {
+        Call call = Call.creator(
+            new PhoneNumber(toPhoneNumber),
+            new PhoneNumber(TWILIO_PHONE_NUMBER),
+            new com.twilio.type.Twiml("<Response><Play>" + messageUrl + "</Play></Response>")
+        ).create();
+
+        System.out.println("Call initiated with SID: " + call.getSid());
+    }
+}
+package com.example.callApp;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/call")
+public class CallController {
+
+    @Autowired
+    private TwilioService twilioService;
+
+    @PostMapping("/makeCall")
+    public String makeCall(@RequestParam("toPhoneNumber") String toPhoneNumber) {
+        // URL des Audios, das abgespielt wird, wenn der Anruf getätigt wird
+        String audioUrl = "http://your-server-url/audio.mp3";
+        twilioService.makeCall(toPhoneNumber, audioUrl);
+        return "Anruf wird getätigt...";
+    }
+}
+src
+ └─ main
+     └─ java
+         └─ com
+             └─ example
+                 └─ callApp
+                     ├── TwilioService.java
+                     ├── CallController.java
+ └─ resources
+     └─ static
+         └─ index.html  // Frontend HTML-Datei
